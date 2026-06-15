@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -35,17 +35,27 @@ export default function Sidebar() {
   // Load collapse state from local storage after mount
   useEffect(() => {
     setMounted(true);
-    const saved = localStorage.getItem('sidebar-collapsed');
-    if (saved !== null) {
-      setIsCollapsed(JSON.parse(saved));
+    try {
+      const saved = localStorage.getItem('sidebar-collapsed');
+      if (saved !== null) {
+        setIsCollapsed(JSON.parse(saved));
+      }
+    } catch (e) {
+      // Ignore localStorage error (e.g. incognito)
     }
   }, []);
 
-  const toggleCollapse = () => {
-    const nextState = !isCollapsed;
-    setIsCollapsed(nextState);
-    localStorage.setItem('sidebar-collapsed', JSON.stringify(nextState));
-  };
+  const toggleCollapse = useCallback(() => {
+    setIsCollapsed(prev => {
+      const nextState = !prev;
+      try {
+        localStorage.setItem('sidebar-collapsed', JSON.stringify(nextState));
+      } catch (e) {
+        // Ignore localStorage error
+      }
+      return nextState;
+    });
+  }, []);
 
   if (!mounted) {
     return (

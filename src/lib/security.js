@@ -14,7 +14,9 @@
  */
 export function sanitizeInput(input) {
   if (typeof input !== 'string') return '';
-  return input
+  // Prevent ReDoS by limiting input length to 10000 characters
+  const trimmed = input.substring(0, 10000);
+  return trimmed
     .replace(/<[^>]*>/g, '')        // strip HTML tags
     .replace(/javascript:/gi, '')    // remove javascript: protocol
     .replace(/on\w+\s*=/gi, '')      // remove inline event handlers
@@ -166,3 +168,98 @@ export const RATE_LIMITS = {
   maxLoginAttempts: 5,
   lockoutDurationMs: 15 * 60 * 1000, // 15 minutes
 };
+
+/**
+ * Client-side rate limiter for form submissions and login attempts.
+ * Uses localStorage to persist attempt counts across page reloads.
+ */
+export class RateLimiter {
+  constructor(actionName, maxAttempts, lockoutDurationMs) {
+    this.actionName = actionName;
+    this.maxAttempts = maxAttempts;
+    this.lockoutDurationMs = lockoutDurationMs;
+  }
+
+  _getKey() {
+    return `rl_${this.actionName}`;
+  }
+
+  _getState() {
+    try {
+      const stateStr = localStorage.getItem(this._getKey());
+      if (!stateStr) return { attempts: 0, firstAttempt: Date.now(), lockoutUntil: null };
+      return JSON.parse(stateStr);
+    } catch (e) {
+      return { attempts: 0, firstAttempt: Date.now(), lockoutUntil: null };
+    }
+  }
+
+  _saveState(state) {
+    try {
+      localStorage.setItem(this._getKey(), JSON.stringify(state));
+    } catch (e) {
+      // Ignore localStorage errors (e.g., SSR or incognito mode)
+    }
+  }
+
+  checkLimit() {
+    const state = this._getState();
+    const now = Date.now();
+
+    // Check if currently locked out
+    if (state.lockoutUntil && now < state.lockoutUntil) {
+      const remainingMs = state.lockoutUntil - now;
+      return { 
+        allowed: false, 
+        remainingMs,
+        message: `Too many attempts. Please try again in ${Math.ceil(remainingMs / 60000)} minutes.` 
+      };
+    }
+
+    // Reset attempts if the lockout duration has passed since the first attempt
+    if (now - state.firstAttempt > this.lockoutDurationMs) {
+      state.attempts = 0;
+      state.firstAttempt = now;
+      state.lockoutUntil = null;
+    }
+
+    return { allowed: true, remainingMs: 0, message: null };
+  }
+
+  recordAttempt() {
+    const state = this._getState();
+    const now = Date.now();
+
+    // Reset attempts if the lockout duration has passed
+    if (now - state.firstAttempt > this.lockoutDurationMs) {
+      state.attempts = 0;
+      state.firstAttempt = now;
+    }
+
+    state.attempts += 1;
+
+    if (state.attempts >= this.maxAttempts) {
+      state.lockoutUntil = now + this.lockoutDurationMs;
+    }
+
+    this._saveState(state);
+  }
+
+  reset() {
+    try {
+      localStorage.removeItem(this._getKey());
+    } catch (e) {
+      // Ignore
+    }
+  }
+}
+
+/**
+ * Generate a Content Security Policy string from the directives.
+ * @returns {string} CSP string
+ */
+export function generateCSP() {
+  return Object.entries(CSP_DIRECTIVES)
+    .map(([key, value]) => `${key} ${value}`)
+    .join('; ');
+}

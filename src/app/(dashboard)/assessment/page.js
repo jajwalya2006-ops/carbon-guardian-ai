@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, ArrowLeft, CheckCircle, Car, Zap, Coffee, ShieldCheck, HelpCircle } from 'lucide-react';
+import { calculateFootprint } from '@/lib/carbonCalculations';
 
 export default function CarbonCalculator() {
   const [step, setStep] = useState(1);
@@ -16,37 +17,18 @@ export default function CarbonCalculator() {
   const [diet, setDiet] = useState('Omnivore (Meat daily)');
   const [clothing, setClothing] = useState('Monthly');
 
-  // Real-time calculation formula
+  // Real-time calculation formula using centralized engine
   const getEstimatedEmissions = () => {
-    let base = 1.2; // base emissions
-    
-    // commute multiplier
-    const dist = parseFloat(commuteDistance) || 0;
-    if (commuteType === 'Car (Gasoline)') base += (dist * 0.15);
-    else if (commuteType === 'Car (Electric)') base += (dist * 0.05);
-    else if (commuteType === 'Public Transit') base += (dist * 0.03);
-    
-    // flights
-    const fl = parseFloat(flights) || 0;
-    base += (fl * 0.4);
-
-    // energy
-    const bill = parseFloat(energyBill) || 0;
-    base += (bill * 0.015);
-    if (heatingSource === 'Oil') base += 0.5;
-    else if (heatingSource === 'Natural Gas') base += 0.3;
-
-    // diet
-    if (diet === 'Omnivore (Meat daily)') base += 1.5;
-    else if (diet === 'Flexitarian (Meat occasionally)') base += 0.8;
-    else if (diet === 'Vegetarian') base += 0.4;
-    else if (diet === 'Vegan') base += 0.15;
-
-    // clothing
-    if (clothing === 'Weekly') base += 0.6;
-    else if (clothing === 'Monthly') base += 0.3;
-    
-    return base.toFixed(1);
+    const footprint = calculateFootprint({
+      commuteType,
+      commuteDistance: parseFloat(commuteDistance) || 0,
+      flights: parseFloat(flights) || 0,
+      energyBill: parseFloat(energyBill) || 0,
+      heatingSource,
+      diet,
+      clothing
+    });
+    return footprint.toFixed(1);
   };
 
   const handleNext = (e) => {

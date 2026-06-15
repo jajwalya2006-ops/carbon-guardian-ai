@@ -1,11 +1,49 @@
 'use client'
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { ArrowRight, Shield, Mail, Lock } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowRight, Shield, Mail, Lock, AlertCircle } from 'lucide-react';
+import { validateEmail, validatePassword, RateLimiter, RATE_LIMITS } from '@/lib/security';
 
 export default function Login() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState({});
+  const [rateLimitError, setRateLimitError] = useState(null);
+  const [limiter, setLimiter] = useState(null);
+
+  useEffect(() => {
+    setLimiter(new RateLimiter('login', RATE_LIMITS.maxLoginAttempts, RATE_LIMITS.lockoutDurationMs));
+  }, []);
+
   const handleLogin = (e) => {
     e.preventDefault();
+    setErrors({});
+    setRateLimitError(null);
+
+    if (limiter) {
+      const limitStatus = limiter.checkLimit();
+      if (!limitStatus.allowed) {
+        setRateLimitError(limitStatus.message);
+        return;
+      }
+    }
+
+    const emailValidation = validateEmail(email);
+    const passwordValidation = validatePassword(password);
+
+    if (!emailValidation.valid || !passwordValidation.valid) {
+      setErrors({
+        email: emailValidation.error,
+        password: passwordValidation.error,
+      });
+      return;
+    }
+
+    if (limiter) limiter.recordAttempt();
+    
+    // Proceed if validation passes (simulated success)
+    if (limiter) limiter.reset();
     window.location.href = '/dashboard';
   };
 
@@ -45,20 +83,72 @@ export default function Login() {
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.925rem' }}>Log in to Carbon Guardian AI</p>
         </div>
 
-        <form onSubmit={handleLogin}>
-          <div className="form-group" style={{ position: 'relative' }}>
-            <label className="form-label">Email Address</label>
+        <AnimatePresence>
+          {rateLimitError && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              style={{
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.2)',
+                borderRadius: '8px',
+                padding: '0.75rem',
+                marginBottom: '1.5rem',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '0.5rem',
+                color: 'var(--danger)',
+                fontSize: '0.875rem'
+              }}
+              role="alert"
+            >
+              <AlertCircle size={16} style={{ marginTop: '2px', flexShrink: 0 }} />
+              <span>{rateLimitError}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <form onSubmit={handleLogin} noValidate>
+          <div className="form-group" style={{ position: 'relative', marginBottom: '1.25rem' }}>
+            <label htmlFor="login-email" className="form-label">Email Address</label>
             <div style={{ position: 'relative' }}>
               <Mail size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
-              <input type="email" className="form-input" placeholder="name@domain.com" required style={{ paddingLeft: '2.5rem' }} />
+              <input 
+                id="login-email"
+                type="email" 
+                className="form-input" 
+                placeholder="name@domain.com" 
+                required 
+                style={{ paddingLeft: '2.5rem', borderColor: errors.email ? 'var(--danger)' : '' }}
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                aria-invalid={!!errors.email}
+                aria-describedby={errors.email ? "email-error" : undefined}
+              />
             </div>
+            {errors.email && <span id="email-error" style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem', display: 'block' }}>{errors.email}</span>}
           </div>
           <div className="form-group" style={{ position: 'relative', marginBottom: '2rem' }}>
-            <label className="form-label">Password</label>
+            <label htmlFor="login-password" className="form-label">Password</label>
             <div style={{ position: 'relative' }}>
               <Lock size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
-              <input type="password" className="form-input" placeholder="••••••••" required style={{ paddingLeft: '2.5rem' }} />
+              <input 
+                id="login-password"
+                type="password" 
+                className="form-input" 
+                placeholder="••••••••" 
+                required 
+                style={{ paddingLeft: '2.5rem', borderColor: errors.password ? 'var(--danger)' : '' }}
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                aria-invalid={!!errors.password}
+                aria-describedby={errors.password ? "password-error" : undefined}
+              />
             </div>
+            {errors.password && <span id="password-error" style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem', display: 'block' }}>{errors.password}</span>}
           </div>
           <motion.button 
             whileHover={{ scale: 1.01 }}
@@ -66,6 +156,7 @@ export default function Login() {
             type="submit" 
             className="btn btn-primary w-full"
             style={{ marginTop: '0.5rem', height: '48px' }}
+            disabled={!!rateLimitError}
           >
             Log In <ArrowRight size={18} />
           </motion.button>

@@ -1,13 +1,14 @@
 'use client'
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Activity, ArrowRight, Target, Send, Bot, User, HelpCircle, ShieldAlert, Sparkles, TrendingDown, TreePine, Car } from 'lucide-react';
 import { calculateTreeEquivalent, calculateCarMilesEquivalent } from '@/lib/carbonCalculations';
 
-const SVGCircle = ({ percentage, color, icon: Icon }) => {
-  const radius = 40;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+const RADIUS = 40;
+const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+
+const SVGCircle = React.memo(({ percentage, color, icon: Icon }) => {
+  const strokeDashoffset = CIRCUMFERENCE - (percentage / 100) * CIRCUMFERENCE;
 
   return (
     <div style={{ position: 'relative', width: '100px', height: '100px' }} aria-hidden="true">
@@ -15,7 +16,7 @@ const SVGCircle = ({ percentage, color, icon: Icon }) => {
         <circle
           cx="50"
           cy="50"
-          r={radius}
+          r={RADIUS}
           stroke={`${color}33`}
           strokeWidth="8"
           fill="none"
@@ -23,15 +24,15 @@ const SVGCircle = ({ percentage, color, icon: Icon }) => {
         <motion.circle
           cx="50"
           cy="50"
-          r={radius}
+          r={RADIUS}
           stroke={color}
           strokeWidth="8"
           fill="none"
           strokeLinecap="round"
-          initial={{ strokeDashoffset: circumference }}
+          initial={{ strokeDashoffset: CIRCUMFERENCE }}
           animate={{ strokeDashoffset }}
           transition={{ duration: 1.5, ease: "easeOut" }}
-          style={{ strokeDasharray: circumference }}
+          style={{ strokeDasharray: CIRCUMFERENCE }}
         />
       </svg>
       <div style={{
@@ -43,7 +44,9 @@ const SVGCircle = ({ percentage, color, icon: Icon }) => {
       </div>
     </div>
   );
-};
+});
+
+SVGCircle.displayName = 'SVGCircle';
 
 export default function CarbonTwin() {
   const [activeTab, setActiveTab] = useState('analytics'); // 'analytics' or 'chat'
@@ -67,7 +70,7 @@ export default function CarbonTwin() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  const handleSendMessage = (text) => {
+  const handleSendMessage = useCallback((text) => {
     if (!text.trim()) return;
 
     // 1. Add User Message
@@ -95,11 +98,11 @@ export default function CarbonTwin() {
       setMessages(prev => [...prev, aiMsg]);
       setIsTyping(false);
     }, 1200);
-  };
+  }, []);
 
   const savingsKg = 1700; // 4.2 - 2.5 = 1.7 Tons = 1700 kg
-  const treesSaved = calculateTreeEquivalent(savingsKg);
-  const milesSaved = calculateCarMilesEquivalent(savingsKg);
+  const treesSaved = useMemo(() => calculateTreeEquivalent(savingsKg), [savingsKg]);
+  const milesSaved = useMemo(() => calculateCarMilesEquivalent(savingsKg), [savingsKg]);
 
   return (
     <div style={{ padding: '0.5rem 0' }}>

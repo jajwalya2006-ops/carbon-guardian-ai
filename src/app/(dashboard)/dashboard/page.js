@@ -13,6 +13,7 @@ import {
   Globe
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import AnimatedCounter from '@/components/ui/AnimatedCounter';
 
 const data = [
   { name: 'Mon', emissions: 45 },
@@ -31,24 +32,6 @@ const activityLog = [
   { id: 4, type: 'transport', activity: 'Highway Drive', impact: '+8.4 kg CO2', time: '2 days ago', status: 'critical' },
 ];
 
-function AnimatedCounter({ value, suffix = '', duration = 1000 }) {
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    let startTimestamp = null;
-    const step = (timestamp) => {
-      if (!startTimestamp) startTimestamp = timestamp;
-      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-      setCount(Math.floor(progress * value));
-      if (progress < 1) {
-        window.requestAnimationFrame(step);
-      }
-    };
-    window.requestAnimationFrame(step);
-  }, [value, duration]);
-
-  return <span>{count.toLocaleString()}{suffix}</span>;
-}
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('weekly');
@@ -106,7 +89,7 @@ export default function Dashboard() {
             </div>
           </div>
           <div style={{ fontSize: '2.5rem', fontWeight: 800, fontFamily: 'Outfit', display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-            <AnimatedCounter value={303} /> 
+            <AnimatedCounter end={303} /> 
             <span style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', fontWeight: 500 }}>kg CO2</span>
           </div>
           <div className="mt-4 flex items-center gap-2" style={{ color: 'var(--success)', fontSize: '0.875rem', fontWeight: 600 }}>
@@ -134,7 +117,7 @@ export default function Dashboard() {
             </div>
           </div>
           <div style={{ fontSize: '2.5rem', fontWeight: 800, fontFamily: 'Outfit', display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-            <AnimatedCounter value={145} />
+            <AnimatedCounter end={145} />
             <span style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', fontWeight: 500 }}>kg CO2</span>
           </div>
           <div className="mt-4 flex items-center gap-2" style={{ color: 'var(--danger)', fontSize: '0.875rem', fontWeight: 600 }}>
@@ -162,7 +145,7 @@ export default function Dashboard() {
             </div>
           </div>
           <div style={{ fontSize: '2.5rem', fontWeight: 800, fontFamily: 'Outfit', display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-            <AnimatedCounter value={98} />
+            <AnimatedCounter end={98} />
             <span style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', fontWeight: 500 }}>kg CO2</span>
           </div>
           <div className="mt-4 flex items-center gap-2" style={{ color: 'var(--success)', fontSize: '0.875rem', fontWeight: 600 }}>

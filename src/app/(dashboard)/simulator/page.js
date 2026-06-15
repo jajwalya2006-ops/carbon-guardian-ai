@@ -4,30 +4,22 @@ import { motion } from 'framer-motion';
 import { SlidersHorizontal, Activity, ArrowRight, ShieldCheck, Sparkles, AlertCircle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
+import { calculateReduction, BASELINES } from '@/lib/carbonCalculations';
+
 export default function Simulator() {
   const baseEmissions = 4200; // 4.2 tons in kg
   const [commute, setCommute] = useState(100); // 100% of current
   const [energy, setEnergy] = useState(100);
   const [diet, setDiet] = useState(100);
 
-  // Baselines for different categories
-  const transportBaseline = 1500;
-  const energyBaseline = 1200;
-  const dietBaseline = 1500;
-
-  // Real-time calculation
-  const simTransport = Math.round((commute / 100) * transportBaseline);
-  const simEnergy = Math.round((energy / 100) * energyBaseline);
-  const simDiet = Math.round((diet / 100) * dietBaseline);
-
-  const calculatedEmissions = simTransport + simEnergy + simDiet;
-  const savings = baseEmissions - calculatedEmissions;
+  // Real-time calculation using centralized engine
+  const { transport: simTransport, energy: simEnergy, diet: simDiet, total: calculatedEmissions, savings } = calculateReduction(baseEmissions, commute, energy, diet);
 
   // Chart data
   const chartData = [
-    { name: 'Transport', Baseline: transportBaseline, Simulated: simTransport },
-    { name: 'Home Energy', Baseline: energyBaseline, Simulated: simEnergy },
-    { name: 'Diet/Food', Baseline: dietBaseline, Simulated: simDiet },
+    { name: 'Transport', Baseline: BASELINES.transport, Simulated: simTransport },
+    { name: 'Home Energy', Baseline: BASELINES.energy, Simulated: simEnergy },
+    { name: 'Diet/Food', Baseline: BASELINES.diet, Simulated: simDiet },
   ];
 
   return (

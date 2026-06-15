@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Target, CheckCircle, Award, Trophy, Sparkles, CheckCircle2 } from 'lucide-react';
 
@@ -10,17 +10,17 @@ export default function Challenges() {
     { id: 3, title: 'Reusable Bottle', desc: 'Do not buy any plastic water bottles today.', points: 15, completed: false },
   ]);
 
-  const handleComplete = (id) => {
+  const handleComplete = useCallback((id) => {
     setChallenges(prev => 
       prev.map(c => c.id === id ? { ...c, completed: true } : c)
     );
-  };
+  }, []);
 
   // Compute points and progress metrics
-  const completedCount = challenges.filter(c => c.completed).length;
-  const earnedPoints = challenges.reduce((acc, curr) => acc + (curr.completed ? curr.points : 0), 0);
-  const totalAvailable = challenges.reduce((acc, curr) => acc + curr.points, 0);
-  const progressPercent = Math.min((earnedPoints / totalAvailable) * 100, 100);
+  const completedCount = useMemo(() => challenges.filter(c => c.completed).length, [challenges]);
+  const earnedPoints = useMemo(() => challenges.reduce((acc, curr) => acc + (curr.completed ? curr.points : 0), 0), [challenges]);
+  const totalAvailable = useMemo(() => challenges.reduce((acc, curr) => acc + curr.points, 0), [challenges]);
+  const progressPercent = useMemo(() => Math.min((earnedPoints / totalAvailable) * 100, 100), [earnedPoints, totalAvailable]);
 
   return (
     <div style={{ padding: '0.5rem 0', maxWidth: '900px', margin: '0 auto' }}>

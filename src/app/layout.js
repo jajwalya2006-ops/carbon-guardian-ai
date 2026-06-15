@@ -5,8 +5,12 @@ export const metadata = {
   description: 'Understand, track, and reduce your carbon footprint with AI-powered digital twin modeling, personalized coaching, and gamified eco-challenges. Built for a sustainable future.',
   keywords: 'carbon footprint, sustainability, AI, climate tech, carbon tracking, eco-friendly',
   authors: [{ name: 'Carbon Guardian AI Team' }],
+}
+
+export const viewport = {
   themeColor: '#070a13',
-  viewport: 'width=device-width, initial-scale=1',
+  width: 'device-width',
+  initialScale: 1,
 }
 
 export default function RootLayout({ children }) {

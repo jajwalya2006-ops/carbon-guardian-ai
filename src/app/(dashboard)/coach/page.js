@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Lightbulb, Check, Award, Sparkles, TrendingDown, Eye, CheckCircle2 } from 'lucide-react';
 
@@ -38,25 +38,25 @@ export default function AICoach() {
     }
   ];
 
-  const handleToggleHabit = (id) => {
+  const handleToggleHabit = useCallback((id) => {
     setAdoptedHabits(prev => ({
       ...prev,
       [id]: !prev[id]
     }));
-  };
+  }, []);
 
-  const adoptedCount = Object.values(adoptedHabits).filter(Boolean).length;
-  const totalSavings = (
+  const adoptedCount = useMemo(() => Object.values(adoptedHabits).filter(Boolean).length, [adoptedHabits]);
+  const totalSavings = useMemo(() => (
     (adoptedHabits.led ? 45 : 0) +
     (adoptedHabits.meatless ? 30 : 0) +
     (adoptedHabits.ac ? 25 : 0)
-  );
+  ), [adoptedHabits]);
 
-  const badges = [
+  const badges = useMemo(() => [
     { title: 'Eco Starter', criteria: 'Adopt 1 Habit', unlocked: adoptedCount >= 1, color: '#06b6d4' },
     { title: 'Carbon Fighter', criteria: 'Adopt 2 Habits', unlocked: adoptedCount >= 2, color: '#10b981' },
     { title: 'Earth Guardian', criteria: 'Adopt 3 Habits', unlocked: adoptedCount >= 3, color: '#f59e0b' }
-  ];
+  ], [adoptedCount]);
 
   return (
     <div style={{ padding: '0.5rem 0', maxWidth: '1000px', margin: '0 auto' }}>
