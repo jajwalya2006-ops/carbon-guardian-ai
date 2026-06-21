@@ -16,11 +16,22 @@ export default function Challenges() {
     );
   }, []);
 
-  // Compute points and progress metrics
-  const completedCount = useMemo(() => challenges.filter(c => c.completed).length, [challenges]);
-  const earnedPoints = useMemo(() => challenges.reduce((acc, curr) => acc + (curr.completed ? curr.points : 0), 0), [challenges]);
-  const totalAvailable = useMemo(() => challenges.reduce((acc, curr) => acc + curr.points, 0), [challenges]);
-  const progressPercent = useMemo(() => Math.min((earnedPoints / totalAvailable) * 100, 100), [earnedPoints, totalAvailable]);
+  // Compute points and progress metrics in a single O(N) pass
+  const { completedCount, earnedPoints, totalAvailable, progressPercent } = useMemo(() => {
+    let completed = 0;
+    let earned = 0;
+    let total = 0;
+    for (let i = 0; i < challenges.length; i++) {
+      const c = challenges[i];
+      total += c.points;
+      if (c.completed) {
+        completed += 1;
+        earned += c.points;
+      }
+    }
+    const progress = Math.min((earned / total) * 100, 100) || 0;
+    return { completedCount: completed, earnedPoints: earned, totalAvailable: total, progressPercent: progress };
+  }, [challenges]);
 
   return (
     <div style={{ padding: '0.5rem 0', maxWidth: '900px', margin: '0 auto' }}>

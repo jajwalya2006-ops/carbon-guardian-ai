@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Shield, User, Mail, Lock, AlertCircle } from 'lucide-react';
-import { validateName, validateEmail, validatePassword, RateLimiter, RATE_LIMITS } from '@/lib/security';
+import { validateName, validateEmail, validatePassword, RateLimiter, RATE_LIMITS, sanitizeInput } from '@/lib/security';
 
 export default function Signup() {
   const [name, setName] = useState('');
@@ -41,8 +41,11 @@ export default function Signup() {
       }
     }
 
-    const nameValidation = validateName(name);
-    const emailValidation = validateEmail(email);
+    const sanitizedName = sanitizeInput(name);
+    const sanitizedEmail = sanitizeInput(email);
+
+    const nameValidation = validateName(sanitizedName);
+    const emailValidation = validateEmail(sanitizedEmail);
     const passwordValidation = validatePassword(password);
 
     if (!nameValidation.valid || !emailValidation.valid || !passwordValidation.valid) {

@@ -1,26 +1,35 @@
 'use client'
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, ArrowUp, ArrowDown, Shield, Award, Crown } from 'lucide-react';
 
 export default function Leaderboard() {
-  const users = [
+  const users = useMemo(() => [
     { rank: 1, name: 'EcoQueen', points: 3450, trend: 'up', color: '#f59e0b', trophyType: 'gold' },
     { rank: 2, name: 'GreenMachine', points: 3200, trend: 'up', color: '#94a3b8', trophyType: 'silver' },
     { rank: 3, name: 'PlanetSaver', points: 2950, trend: 'down', color: '#b45309', trophyType: 'bronze' },
     { rank: 4, name: 'You (Carbon Guardian)', points: 2840, trend: 'up', isUser: true },
     { rank: 5, name: 'SustainableSteve', points: 2600, trend: 'down' },
-  ];
+  ], []);
 
-  // Separate podium users and standard list users
-  const topThree = users.filter(u => u.rank <= 3);
-  const remaining = users.filter(u => u.rank > 3);
+  // Separate podium users and standard list users in a single pass O(N)
+  const { podiumOrder } = useMemo(() => {
+    const topThree = [];
+    const remaining = [];
+    for (let i = 0; i < users.length; i++) {
+      if (users[i].rank <= 3) topThree.push(users[i]);
+      else remaining.push(users[i]);
+    }
 
-  // Reorder top three for visual podium (2nd, 1st, 3rd)
-  const podiumOrder = [
-    topThree.find(u => u.rank === 2),
-    topThree.find(u => u.rank === 1),
-    topThree.find(u => u.rank === 3)
-  ];
+    // Reorder top three for visual podium (2nd, 1st, 3rd)
+    const order = [
+      topThree.find(u => u.rank === 2),
+      topThree.find(u => u.rank === 1),
+      topThree.find(u => u.rank === 3)
+    ];
+
+    return { topThree, remaining, podiumOrder: order };
+  }, [users]);
 
   return (
     <div style={{ padding: '0.5rem 0', maxWidth: '850px', margin: '0 auto' }}>

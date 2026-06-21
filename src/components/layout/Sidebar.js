@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -27,7 +27,7 @@ const navItems = [
   { name: 'Leaderboard', href: '/leaderboard', icon: Trophy },
 ];
 
-export default function Sidebar() {
+const Sidebar = React.memo(function Sidebar() {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -56,6 +56,65 @@ export default function Sidebar() {
       return nextState;
     });
   }, []);
+
+  const renderedNavItems = useMemo(() => navItems.map((item) => {
+    const Icon = item.icon;
+    const isActive = pathname === item.href;
+    return (
+      <Link 
+        key={item.href} 
+        href={item.href} 
+        style={{ textDecoration: 'none' }}
+        aria-current={isActive ? 'page' : undefined}
+        aria-label={isCollapsed ? item.name : undefined}
+      >
+        <motion.div
+          whileHover={{ x: isCollapsed ? 0 : 4, backgroundColor: 'rgba(255, 255, 255, 0.04)' }}
+          whileTap={{ scale: 0.98 }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: isCollapsed ? 'center' : 'flex-start',
+            gap: '1rem',
+            padding: '0.8rem 1rem',
+            borderRadius: 'var(--radius-sm)',
+            backgroundColor: isActive ? 'rgba(16, 185, 129, 0.12)' : 'transparent',
+            border: isActive ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid transparent',
+            color: isActive ? 'white' : 'var(--text-secondary)',
+            fontWeight: isActive ? 600 : 500,
+            position: 'relative',
+            cursor: 'pointer'
+          }}
+        >
+          {isActive && (
+            <motion.div 
+              layoutId="activeGlow"
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                left: 0,
+                width: '4px',
+                height: '60%',
+                backgroundColor: 'var(--primary)',
+                borderRadius: '0 4px 4px 0',
+                boxShadow: '0 0 10px var(--primary)'
+              }}
+            />
+          )}
+          <Icon size={18} aria-hidden="true" style={{ color: isActive ? 'var(--primary)' : 'inherit', flexShrink: 0 }} />
+          {!isCollapsed && (
+            <motion.span
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              style={{ fontSize: '0.925rem', whiteSpace: 'nowrap' }}
+            >
+              {item.name}
+            </motion.span>
+          )}
+        </motion.div>
+      </Link>
+    );
+  }), [pathname, isCollapsed]);
 
   if (!mounted) {
     return (
@@ -169,64 +228,7 @@ export default function Sidebar() {
 
       {/* Navigation Menu */}
       <nav aria-label="Dashboard pages" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', flex: 1 }}>
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = pathname === item.href;
-          return (
-            <Link 
-              key={item.href} 
-              href={item.href} 
-              style={{ textDecoration: 'none' }}
-              aria-current={isActive ? 'page' : undefined}
-              aria-label={isCollapsed ? item.name : undefined}
-            >
-              <motion.div
-                whileHover={{ x: isCollapsed ? 0 : 4, backgroundColor: 'rgba(255, 255, 255, 0.04)' }}
-                whileTap={{ scale: 0.98 }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: isCollapsed ? 'center' : 'flex-start',
-                  gap: '1rem',
-                  padding: '0.8rem 1rem',
-                  borderRadius: 'var(--radius-sm)',
-                  backgroundColor: isActive ? 'rgba(16, 185, 129, 0.12)' : 'transparent',
-                  border: isActive ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid transparent',
-                  color: isActive ? 'white' : 'var(--text-secondary)',
-                  fontWeight: isActive ? 600 : 500,
-                  position: 'relative',
-                  cursor: 'pointer'
-                }}
-              >
-                {isActive && (
-                  <motion.div 
-                    layoutId="activeGlow"
-                    aria-hidden="true"
-                    style={{
-                      position: 'absolute',
-                      left: 0,
-                      width: '4px',
-                      height: '60%',
-                      backgroundColor: 'var(--primary)',
-                      borderRadius: '0 4px 4px 0',
-                      boxShadow: '0 0 10px var(--primary)'
-                    }}
-                  />
-                )}
-                <Icon size={18} aria-hidden="true" style={{ color: isActive ? 'var(--primary)' : 'inherit', flexShrink: 0 }} />
-                {!isCollapsed && (
-                  <motion.span
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    style={{ fontSize: '0.925rem', whiteSpace: 'nowrap' }}
-                  >
-                    {item.name}
-                  </motion.span>
-                )}
-              </motion.div>
-            </Link>
-          );
-        })}
+        {renderedNavItems}
       </nav>
 
       {/* Logout / Return Home */}
@@ -261,4 +263,6 @@ export default function Sidebar() {
       </div>
     </motion.aside>
   );
-}
+});
+
+export default Sidebar;

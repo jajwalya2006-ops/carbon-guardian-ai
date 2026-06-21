@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, ArrowLeft, CheckCircle, Car, Zap, Coffee, ShieldCheck, HelpCircle } from 'lucide-react';
 import { calculateFootprint } from '@/lib/carbonCalculations';
+import { validateNumericInput, sanitizeInput } from '@/lib/security';
 
 export default function CarbonCalculator() {
   const [step, setStep] = useState(1);
@@ -20,13 +21,13 @@ export default function CarbonCalculator() {
   // Real-time calculation formula using centralized engine
   const getEstimatedEmissions = () => {
     const footprint = calculateFootprint({
-      commuteType,
-      commuteDistance: parseFloat(commuteDistance) || 0,
-      flights: parseFloat(flights) || 0,
-      energyBill: parseFloat(energyBill) || 0,
-      heatingSource,
-      diet,
-      clothing
+      commuteType: sanitizeInput(commuteType) || 'Car (Gasoline)',
+      commuteDistance: validateNumericInput(commuteDistance, 0, 10000).value,
+      flights: validateNumericInput(flights, 0, 1000).value,
+      energyBill: validateNumericInput(energyBill, 0, 100000).value,
+      heatingSource: sanitizeInput(heatingSource) || 'Natural Gas',
+      diet: sanitizeInput(diet) || 'Omnivore (Meat daily)',
+      clothing: sanitizeInput(clothing) || 'Monthly'
     });
     return footprint.toFixed(1);
   };
