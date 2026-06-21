@@ -1,10 +1,18 @@
 'use client'
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
 import { SlidersHorizontal, Activity, ArrowRight, ShieldCheck, Sparkles, AlertCircle } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BASELINES } from '@/lib/carbonCalculations';
 
-import { calculateReduction, BASELINES } from '@/lib/carbonCalculations';
+const ResponsiveContainer = dynamic(() => import('recharts').then(mod => mod.ResponsiveContainer), { ssr: false });
+const BarChart = dynamic(() => import('recharts').then(mod => mod.BarChart), { ssr: false });
+const Bar = dynamic(() => import('recharts').then(mod => mod.Bar), { ssr: false });
+const XAxis = dynamic(() => import('recharts').then(mod => mod.XAxis), { ssr: false });
+const YAxis = dynamic(() => import('recharts').then(mod => mod.YAxis), { ssr: false });
+const CartesianGrid = dynamic(() => import('recharts').then(mod => mod.CartesianGrid), { ssr: false });
+const Tooltip = dynamic(() => import('recharts').then(mod => mod.Tooltip), { ssr: false });
+const Legend = dynamic(() => import('recharts').then(mod => mod.Legend), { ssr: false });
 
 export default function Simulator() {
   const baseEmissions = 4200; // 4.2 tons in kg
@@ -12,14 +20,49 @@ export default function Simulator() {
   const [energy, setEnergy] = useState(100);
   const [diet, setDiet] = useState(100);
 
-  // Real-time calculation using centralized engine
-  const { transport: simTransport, energy: simEnergy, diet: simDiet, total: calculatedEmissions, savings } = calculateReduction(baseEmissions, commute, energy, diet);
+  const workerRef = useRef(null);
+  const [simResults, setSimResults] = useState({
+    simTransport: BASELINES.transport,
+    simEnergy: BASELINES.energy,
+    simDiet: BASELINES.diet,
+    calculatedEmissions: baseEmissions,
+    savings: 0
+  });
+
+  useEffect(() => {
+    workerRef.current = new Worker(new URL('@/workers/carbonWorker.js', import.meta.url));
+    workerRef.current.onmessage = (event) => {
+      const { result } = event.data;
+      if (result) {
+        setSimResults({
+          simTransport: result.transport,
+          simEnergy: result.energy,
+          simDiet: result.diet,
+          calculatedEmissions: result.total,
+          savings: result.savings
+        });
+      }
+    };
+    return () => {
+      workerRef.current?.terminate();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (workerRef.current) {
+      workerRef.current.postMessage({
+        id: Date.now(),
+        type: 'CALCULATE_REDUCTION',
+        payload: { baseEmissions, commute, energy, diet }
+      });
+    }
+  }, [commute, energy, diet]);
 
   // Chart data
   const chartData = [
-    { name: 'Transport', Baseline: BASELINES.transport, Simulated: simTransport },
-    { name: 'Home Energy', Baseline: BASELINES.energy, Simulated: simEnergy },
-    { name: 'Diet/Food', Baseline: BASELINES.diet, Simulated: simDiet },
+    { name: 'Transport', Baseline: BASELINES.transport, Simulated: simResults.simTransport },
+    { name: 'Home Energy', Baseline: BASELINES.energy, Simulated: simResults.simEnergy },
+    { name: 'Diet/Food', Baseline: BASELINES.diet, Simulated: simResults.simDiet },
   ];
 
   return (
@@ -113,14 +156,14 @@ export default function Simulator() {
             <div>
               <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Simulated Footprint</span>
               <div style={{ fontSize: '2.5rem', fontWeight: 800, fontFamily: 'Outfit', color: 'white', display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                {(calculatedEmissions / 1000).toFixed(2)} 
+                {(simResults.calculatedEmissions / 1000).toFixed(2)} 
                 <span style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Tons/yr</span>
               </div>
             </div>
             <div style={{ textAlign: 'right', borderLeft: '1px solid rgba(255,255,255,0.08)', paddingLeft: '1.5rem' }}>
               <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Potential Savings</span>
               <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--primary)' }}>
-                {savings} kg CO2/yr
+                {simResults.savings} kg CO2/yr
               </div>
             </div>
           </div>

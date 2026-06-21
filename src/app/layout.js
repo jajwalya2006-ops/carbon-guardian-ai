@@ -1,4 +1,9 @@
+import { Inter, Outfit } from 'next/font/google';
+import Script from 'next/script';
 import './globals.css'
+
+const inter = Inter({ subsets: ['latin'], display: 'swap', variable: '--font-inter' });
+const outfit = Outfit({ subsets: ['latin'], display: 'swap', variable: '--font-outfit' });
 
 export const metadata = {
   title: 'Carbon Guardian AI — AI-Powered Carbon Footprint Platform',
@@ -15,13 +20,15 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${inter.variable} ${outfit.variable}`}>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet" />
       </head>
       <body>
+        <Script id="dummy-analytics" strategy="lazyOnload">
+          {`
+            console.log("Lazy loaded analytics script executed");
+          `}
+        </Script>
         <a href="#main-content" className="skip-nav">
           Skip to main content
         </a>

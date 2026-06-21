@@ -81,22 +81,30 @@ export default function CarbonTwin() {
     // 2. Trigger Typing Indicator
     setIsTyping(true);
 
-    // 3. Simulated Response mapping
+    // 3. Simulated Response mapping (Chunked with requestIdleCallback)
     setTimeout(() => {
-      let replyText = "Based on your carbon profile, I recommend optimization of your home heating efficiency and lowering car commute by 20% to reach a better carbon grade.";
-      
-      const query = text.toLowerCase();
-      if (query.includes('2.5') || query.includes('baseline')) {
-        replyText = "To hit our Optimized Target of 2.5 Tons CO2/yr, we need to implement three core modifications: 1) Switch to LED bulbs (~45 kg CO2/mo), 2) Replace daily gasoline commute with public/active transit 2 days/week (~90 kg CO2/mo), and 3) Switch to vegetarian meals 3 days/week (~60 kg CO2/mo).";
-      } else if (query.includes('transit') || query.includes('car')) {
-        replyText = "Your transport profile represents 145 kg CO2 weekly (our highest segment!). Transitioning to a hybrid commuter model or using public transit could shave up to 35% of this value. I suggest checking out the simulator page to test target commute changes.";
-      } else if (query.includes('habit') || query.includes('savings') || query.includes('biggest')) {
-        replyText = "The single biggest impact area for your profile is commuter habits. Adjusting your daily driving distance or swapping to an electric vehicle reduces emissions by an estimated 1.5 Tons of CO2 annually. Second to that is transitioning to a vegetarian/flexitarian diet.";
-      }
+      const scheduleIdleTask = window.requestIdleCallback || ((cb) => setTimeout(cb, 1));
 
-      const aiMsg = { id: Date.now() + 1, sender: 'ai', text: replyText };
-      setMessages(prev => [...prev, aiMsg]);
-      setIsTyping(false);
+      scheduleIdleTask(() => {
+        let replyText = "Based on your carbon profile, I recommend optimization of your home heating efficiency and lowering car commute by 20% to reach a better carbon grade.";
+        
+        scheduleIdleTask(() => {
+          const query = text.toLowerCase();
+          if (query.includes('2.5') || query.includes('baseline')) {
+            replyText = "To hit our Optimized Target of 2.5 Tons CO2/yr, we need to implement three core modifications: 1) Switch to LED bulbs (~45 kg CO2/mo), 2) Replace daily gasoline commute with public/active transit 2 days/week (~90 kg CO2/mo), and 3) Switch to vegetarian meals 3 days/week (~60 kg CO2/mo).";
+          } else if (query.includes('transit') || query.includes('car')) {
+            replyText = "Your transport profile represents 145 kg CO2 weekly (our highest segment!). Transitioning to a hybrid commuter model or using public transit could shave up to 35% of this value. I suggest checking out the simulator page to test target commute changes.";
+          } else if (query.includes('habit') || query.includes('savings') || query.includes('biggest')) {
+            replyText = "The single biggest impact area for your profile is commuter habits. Adjusting your daily driving distance or swapping to an electric vehicle reduces emissions by an estimated 1.5 Tons of CO2 annually. Second to that is transitioning to a vegetarian/flexitarian diet.";
+          }
+
+          scheduleIdleTask(() => {
+            const aiMsg = { id: Date.now() + 1, sender: 'ai', text: replyText };
+            setMessages(prev => [...prev, aiMsg]);
+            setIsTyping(false);
+          });
+        });
+      });
     }, 1200);
   }, []);
 
